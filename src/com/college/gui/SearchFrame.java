@@ -1,4 +1,3 @@
-
 package com.college.gui;
 
 import javax.swing.*;
@@ -113,10 +112,48 @@ public class SearchFrame extends JFrame {
                     return;
                 }
 
-                List<String> recommendations =
-                        recommendationService.recommendColleges(
+                searchButton.setEnabled(false);
+                searchButton.setText("Searching...");
+
+                new SwingWorker<List<String>, Void>() {
+                    @Override
+                    protected List<String> doInBackground() {
+                        // runs on a background thread: database query
+                        return recommendationService.recommendColleges(
                                 value, category, city, branch
                         );
+                    }
+
+                    @Override
+                    protected void done() {
+                        // runs back on the Event Dispatch Thread: update the UI
+                        try {
+                            showResults(get(), category, city, branch);
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(
+                                    SearchFrame.this,
+                                    "Search failed: " + ex.getMessage()
+                            );
+                        } finally {
+                            searchButton.setEnabled(true);
+                            searchButton.setText("Search");
+                        }
+                    }
+                }.execute();
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please enter a valid numeric percentile."
+                );
+            }
+        });
+
+        backButton.addActionListener(e -> dispose());
+    }
+
+    private void showResults(List<String> recommendations,
+                             String category, String city, String branch) {
 
                 DefaultListModel<String> listModel =
                         new DefaultListModel<>();
@@ -263,15 +300,5 @@ public class SearchFrame extends JFrame {
                         "College Recommendations",
                         JOptionPane.PLAIN_MESSAGE
                 );
-
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Please enter a valid numeric percentile."
-                );
-            }
-        });
-
-        backButton.addActionListener(e -> dispose());
     }
 }
